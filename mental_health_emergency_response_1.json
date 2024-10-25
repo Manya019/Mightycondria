@@ -1,0 +1,341 @@
+{
+  "createTime": 1729800932399,
+  "updateTime": 1729865291025,
+  "name": "mental_health_emergency_response",
+  "description": "Workflow for processing mental health emergency calls",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "audio_validation",
+      "taskReferenceName": "validate_audio",
+      "inputParameters": {
+        "audioContent": "${workflow.input.audioFile}"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "retryCount": 2,
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "speech_to_text",
+      "taskReferenceName": "stt_processing",
+      "inputParameters": {
+        "audioContent": "${validate_audio.output.validatedAudio}"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "retryCount": 1,
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "parallel_analysis",
+      "taskReferenceName": "parallel_analysis",
+      "inputParameters": {
+        "textToAnalyze": "${stt_processing.output.text}",
+        "analysisParameters": {
+          "languageCode": "en-US",
+          "confidenceThreshold": 0.7
+        }
+      },
+      "type": "FORK_JOIN",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [
+        [
+          {
+            "name": "emotion_analysis",
+            "taskReferenceName": "emotion_processing",
+            "inputParameters": {
+              "text": "${stt_processing.output.text}",
+              "parameters": "${parallel_analysis.input.analysisParameters}"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          }
+        ],
+        [
+          {
+            "name": "severity_assessment",
+            "taskReferenceName": "severity_processing",
+            "inputParameters": {
+              "text": "${stt_processing.output.text}",
+              "parameters": "${parallel_analysis.input.analysisParameters}"
+            },
+            "type": "SIMPLE",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          }
+        ]
+      ],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "join_analysis_results",
+      "taskReferenceName": "analysis_join",
+      "inputParameters": {},
+      "type": "JOIN",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [
+        "emotion_processing",
+        "severity_processing"
+      ],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "response_generation",
+      "taskReferenceName": "generate_response",
+      "inputParameters": {
+        "emotion": "${emotion_processing.output.emotion}",
+        "severity": "${severity_processing.output.severity}"
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "emergency_level_decision",
+      "taskReferenceName": "emergency_check",
+      "inputParameters": {
+        "emergencyLevel": "${generate_response.output.emergencyLevel}"
+      },
+      "type": "DECISION",
+      "caseValueParam": "emergencyLevel",
+      "decisionCases": {
+        "HIGH": [
+          {
+            "name": "emergency_protocol",
+            "taskReferenceName": "high_emergency",
+            "inputParameters": {
+              "emergencyDetails": "${generate_response.output}"
+            },
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "emergency_protocol_workflow",
+              "version": 1
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          }
+        ],
+        "MEDIUM": [
+          {
+            "name": "alert_protocol",
+            "taskReferenceName": "medium_alert",
+            "inputParameters": {
+              "alertDetails": "${generate_response.output}"
+            },
+            "type": "SUB_WORKFLOW",
+            "decisionCases": {},
+            "defaultCase": [],
+            "forkTasks": [],
+            "startDelay": 0,
+            "subWorkflowParam": {
+              "name": "alert_protocol_workflow",
+              "version": 1
+            },
+            "joinOn": [],
+            "optional": false,
+            "defaultExclusiveJoinTask": [],
+            "asyncComplete": false,
+            "loopOver": [],
+            "onStateChange": {},
+            "permissive": false
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "standard_response",
+          "taskReferenceName": "low_standard",
+          "inputParameters": {
+            "responseTemplate": "${generate_response.output.template}"
+          },
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        }
+      ],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "collect_timing_metrics",
+      "taskReferenceName": "timing_metrics",
+      "inputParameters": {
+        "taskReferences": [
+          "validate_audio",
+          "stt_processing",
+          "parallel_analysis",
+          "emotion_processing",
+          "severity_processing",
+          "analysis_join",
+          "generate_response",
+          "emergency_check"
+        ],
+        "taskTimings": {
+          "validate_audio": {
+            "startTime": "${validate_audio.startTime}",
+            "endTime": "${validate_audio.endTime}",
+            "status": "${validate_audio.status}"
+          },
+          "stt_processing": {
+            "startTime": "${stt_processing.startTime}",
+            "endTime": "${stt_processing.endTime}",
+            "status": "${stt_processing.status}"
+          },
+          "parallel_analysis": {
+            "startTime": "${parallel_analysis.startTime}",
+            "endTime": "${parallel_analysis.endTime}",
+            "status": "${parallel_analysis.status}"
+          }
+        }
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    },
+    {
+      "name": "monitoring_and_logging",
+      "taskReferenceName": "monitor_log",
+      "inputParameters": {
+        "responseData": "${workflow.output}",
+        "timingMetrics": "${timing_metrics.output}",
+        "workflowMetadata": {
+          "workflowId": "${workflow.workflowId}",
+          "workflowType": "${workflow.workflowType}",
+          "correlationId": "${workflow.correlationId}"
+        }
+      },
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "onStateChange": {},
+      "permissive": false
+    }
+  ],
+  "inputParameters": [
+    "audioFile"
+  ],
+  "outputParameters": {
+    "processedText": "${stt_processing.output.text}",
+    "emotionalState": "${emotion_processing.output.emotion}",
+    "responseGenerated": "${generate_response.output.response}",
+    "emergencyLevel": "${emergency_check.output.emergencyLevel}",
+    "performance": {
+      "timing": "${timing_metrics.output.workflowMetrics}",
+      "analysis": "${timing_metrics.output.timingAnalysis}",
+      "taskDetails": "${timing_metrics.output.taskTimings}"
+    }
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": true,
+  "ownerEmail": "manyasharma019@gmail.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "enforceSchema": true
+}
