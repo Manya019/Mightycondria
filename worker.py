@@ -1,4 +1,3 @@
-# worker.py
 import requests
 import time
 import json
@@ -22,7 +21,7 @@ def get_jwt_token():
     response = requests.post(url, json=payload, headers=headers)
     
     print(f"Response Status Code: {response.status_code}")
-    print(f"Response Text: {response.text}")  # Debugging output
+    print(f"Response Text: {response.text}")  
 
     if response.status_code == 200:
         token = response.json().get("token")
