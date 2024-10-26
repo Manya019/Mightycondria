@@ -8,7 +8,7 @@ Key Objectives:
 1.Speech-to-Text Implementation:
 
 Set up the openAI Speech-to-Text API and test it with sample audio files.
-Create a task in Orkes that sends audio data to the Google API and captures the transcribed text.
+Create a task in Orkes that sends audio data to the openAI API and captures the transcribed text.
 
 2.Emotional Analysis:
 
